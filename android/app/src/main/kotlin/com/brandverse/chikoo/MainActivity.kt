@@ -17,7 +17,7 @@ class MainActivity : FlutterActivity() {
     private val CHANNEL = "brandverse.chikoo/POS"
 
     var posService: AgPosIntgrServiceInterface? = null
-    var connection: ServiceConnection = object : ServiceConnection {
+    private var connection: ServiceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, iBinder: IBinder) {
             posService = AgPosIntgrServiceInterface.Stub.asInterface(iBinder)
             Log.d("AIDL SERVICE", "Remote config initialised")
@@ -28,17 +28,21 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-
         //AIDL BINDING
-        val intent = Intent("com.pos.intgr.service")
-        intent.setPackage("com.brandverse.chikoo")
-        bindService(
-            intent,
-            //convertImplicitIntentToExplicitIntent(intent, this),
-            connection,
-            BIND_AUTO_CREATE
-        )
-
+//        val intent = Intent("com.pos.intgr.service")
+//        intent.setPackage("com.pos.intgr.service")
+//       val check =  bindService(
+//           intent,
+//           //convertImplicitIntentToExplicitIntent(intent, this),
+//           connection,
+//           BIND_AUTO_CREATE
+//       )
+//        if(!check){
+//            Log.d("Binding ","Failed")
+//        }else{
+//            Log.d("Binding ","Success")
+//        }
+            bindToService()
         //INIT Method Channels
         flutterEngine?.dartExecutor?.let {
             MethodChannel(it.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
@@ -76,19 +80,38 @@ class MainActivity : FlutterActivity() {
 
     }
 
+    private fun bindToService(){
+        val intent = Intent("com.pos.intgr.service")
+        intent.setPackage("com.pos.intgr.service")
+        val check =  bindService(
+            intent,
+            //convertImplicitIntentToExplicitIntent(intent, this),
+            connection,
+            BIND_AUTO_CREATE
+        )
+        if(!check){
+            Log.d("Binding ","Failed")
+        }else{
+            Log.d("Binding ","Success")
+        }
+    }
+
     private fun makePayment(request: String): String? {
+        bindToService()
         Log.d("PAYMENT REQUEST", request)
 
-        val response = posService?.processPosRequest(request);
+        val response = posService?.processPosRequest(request)
         if (response != null) {
             Log.d("PAYMENT RESPONSE", response)
         } else {
             Log.d("PAYMENT RESPONSE", "NOT RECEIVED")
         }
-        return response;
+        unbindService(connection)
+        return response
     }
 
     private fun checkPaymentStatus(request: String): String? {
+        bindToService()
         Log.d("PAYMENT STATUS REQUEST", request)
         val response = posService?.getStatus(request)
 
@@ -97,10 +120,12 @@ class MainActivity : FlutterActivity() {
         } else {
             Log.d("PAYMENT STATUS RESPONSE", "NOT RECEIVED")
         }
-        return response;
+        unbindService(connection)
+        return response
     }
 
     private fun makePrinterCall(request: String): String? {
+        bindToService()
         Log.d("PRINTER CALL", request)
         val response = posService?.processPosRequest(request)
         if (response != null) {
@@ -108,10 +133,12 @@ class MainActivity : FlutterActivity() {
         } else {
             Log.d("PRINTER CALL RESPONSE", "NOT RECEIVED")
         }
+        unbindService(connection)
         return response
     }
 
     private fun checkPrinterStatus(request: String): String? {
+        bindToService()
         Log.d("PRINTER STATUS REQUEST", request)
         val response = posService?.getStatus(request)
 
@@ -120,7 +147,8 @@ class MainActivity : FlutterActivity() {
         } else {
             Log.d("PRINTER STATUS RESPONSE", "NOT RECEIVED")
         }
-        return response;
+        unbindService(connection)
+        return response
     }
 
 

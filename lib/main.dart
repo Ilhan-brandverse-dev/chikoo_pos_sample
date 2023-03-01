@@ -54,7 +54,7 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Text("DATA: $data",
+              Text("DATA RECEIVED: $data",
                   style: Theme.of(context).textTheme.headlineMedium),
               Text(
                 "ERROR: $error",

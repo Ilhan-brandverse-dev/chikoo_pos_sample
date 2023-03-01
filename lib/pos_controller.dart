@@ -1,5 +1,6 @@
 import 'dart:convert';
-
+import 'dart:developer';
+import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:pos_payment/channels_constants.dart';
 import 'package:pos_payment/pos_response_handler.dart';
@@ -8,13 +9,17 @@ class POSController {
   final channel = const MethodChannel(ChannelsConstants.channelName);
 
   Future<POSResponseHandler> makePayment() async {
+    //get current process ID
+    int taskId = pid;
+    log(taskId.toString());
     Map<String, dynamic> requestParams = {
       "headers": {
         "APIId": "1001",
         "clientAppId": "com.brandverse.chikoo",
         "serviceName": "PAYMENT_API",
         "userName": "Test",
-        "userPassword": "Testing123"
+        "userPassword": "Testing123",
+        "processId": taskId.toString()
       },
       "body": {
         "txnAmount": "1298.75",
@@ -40,11 +45,14 @@ class POSController {
   }
 
   Future<POSResponseHandler> checkPaymentStatus(String reference) async {
+    int taskId = pid;
+    log(taskId.toString());
     Map<String, dynamic> requestParams = {
       "header": {
         "APIId": "1002",
         "clientAppId": "com.brandverse.chikoo",
-        "serviceName": "GET_STATUS_PAYMENT"
+        "serviceName": "GET_STATUS_PAYMENT",
+        "processId": taskId.toString()
       },
       "body": {"ref": reference}
     };
@@ -73,13 +81,16 @@ class POSController {
 
   Future<POSResponseHandler> printReceipt(
       List<String> header, List<String> body, List<String> footer) async {
+    int taskId = pid;
+    log(taskId.toString());
     Map<String, dynamic> requestParams = {
       "header": {
         "APIId": "1005",
         "clientAppId": "com.brandverse.chikoo",
         "serviceName": "PRINTER_API",
         "userName": "Test",
-        "userPassword": "Testing123"
+        "userPassword": "Testing123",
+        "processId": taskId.toString()
       },
       "body": {
         "printHeader": {"sList": header},
@@ -94,7 +105,6 @@ class POSController {
     responseHandler.handleProcessRequest(response);
     return responseHandler;
 
-
     ///Response
     //"code": "0000",
     // "message": "Acknowledged",
@@ -102,11 +112,14 @@ class POSController {
   }
 
   Future<POSResponseHandler> checkPrinterStatus(String reference) async {
+    int taskId = pid;
+    log(taskId.toString());
     Map<String, dynamic> requestParams = {
       "header": {
         "APIId": "1006",
         "clientAppId": "com.brandverse.chikoo",
-        "serviceName": "GET_STATUS_PRINTER"
+        "serviceName": "GET_STATUS_PRINTER",
+        "processId": taskId.toString()
       },
       "body": {"ref": reference}
     };
@@ -118,6 +131,4 @@ class POSController {
     responseHandler.handleStatusCall(response);
     return responseHandler;
   }
-
-
 }
