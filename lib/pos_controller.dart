@@ -1,5 +1,5 @@
+import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:pos_payment/channels_constants.dart';
@@ -8,21 +8,26 @@ import 'package:pos_payment/pos_response_handler.dart';
 class POSController {
   final channel = const MethodChannel(ChannelsConstants.channelName);
 
-  Future<POSResponseHandler> makePayment() async {
-    //get current process ID
+  checkProcessId() async {
     int taskId = pid;
-    log(taskId.toString());
+    print("Process Id from Flutter :- $taskId");
+    final response = await channel.invokeMethod("getProcessId");
+    print("Process id from Android:- $response");
+  }
+
+  Future<POSResponseHandler> makePayment() async {
+    var taskId = await channel.invokeMethod(ChannelsConstants.processId);
     Map<String, dynamic> requestParams = {
-      "headers": {
-        "APIId": "1001",
-        "clientAppId": "com.brandverse.chikoo",
-        "serviceName": "PAYMENT_API",
-        "userName": "Test",
-        "userPassword": "Testing123",
+      "header": {
+        "ApiId": "1001",
+        "applicationIdentifier": "com.brandverse.chikoo",
+        "serviceApi": "PAYMENT_API",
+        "userName": "userid",
+        "userPassword": "password",
         "processId": taskId.toString()
       },
       "body": {
-        "txnAmount": "1298.75",
+        "txnAmount": "100",
         "txnDateTime": DateTime.now().toString(),
         "txnCurrency": "PKR",
         "invNumber": "000067",
@@ -38,28 +43,29 @@ class POSController {
     responseHandler.handleProcessRequest(response);
     return responseHandler;
 
-    ///response
-    ///"code": "0000",
-    /// "message": "Acknowledged",
-    /// "ref": "9999999999999"
   }
 
   Future<POSResponseHandler> checkPaymentStatus(String reference) async {
-    int taskId = pid;
-    log(taskId.toString());
-    Map<String, dynamic> requestParams = {
-      "header": {
-        "APIId": "1002",
-        "clientAppId": "com.brandverse.chikoo",
-        "serviceName": "GET_STATUS_PAYMENT",
-        "processId": taskId.toString()
-      },
-      "body": {"ref": reference}
-    };
-
-    final response = await channel.invokeMethod(
-        ChannelsConstants.paymentStatus, {"data": jsonEncode(requestParams)});
+    var response = await channel
+        .invokeMethod(ChannelsConstants.paymentStatus, {"data": reference});
     print(response);
+    int totalSeconds = 0;
+    while (response == '{}') {
+      print("in while");
+      await Future.delayed(const Duration(seconds: 2));
+      if (totalSeconds >= 45) {
+        break;
+      } else {
+        response = await channel
+            .invokeMethod(ChannelsConstants.paymentStatus, {"data": reference});
+        if (response != '{}') {
+          break;
+        }
+      }
+      totalSeconds += 2;
+    }
+
+    print(response.toString());
     POSResponseHandler responseHandler = POSResponseHandler();
     responseHandler.handleStatusCall(response);
     return responseHandler;
@@ -81,15 +87,14 @@ class POSController {
 
   Future<POSResponseHandler> printReceipt(
       List<String> header, List<String> body, List<String> footer) async {
-    int taskId = pid;
-    log(taskId.toString());
+    var taskId = await channel.invokeMethod(ChannelsConstants.processId);
     Map<String, dynamic> requestParams = {
       "header": {
-        "APIId": "1005",
-        "clientAppId": "com.brandverse.chikoo",
-        "serviceName": "PRINTER_API",
-        "userName": "Test",
-        "userPassword": "Testing123",
+        "ApiId": "1002",
+        "applicationIdentifier": "com.brandverse.chikoo",
+        "serviceApi": "PRINTER_API",
+        "userName": "userid",
+        "userPassword": "password",
         "processId": taskId.toString()
       },
       "body": {
@@ -104,28 +109,11 @@ class POSController {
     POSResponseHandler responseHandler = POSResponseHandler();
     responseHandler.handleProcessRequest(response);
     return responseHandler;
-
-    ///Response
-    //"code": "0000",
-    // "message": "Acknowledged",
-    // "ref": "9999999999999"
   }
 
   Future<POSResponseHandler> checkPrinterStatus(String reference) async {
-    int taskId = pid;
-    log(taskId.toString());
-    Map<String, dynamic> requestParams = {
-      "header": {
-        "APIId": "1006",
-        "clientAppId": "com.brandverse.chikoo",
-        "serviceName": "GET_STATUS_PRINTER",
-        "processId": taskId.toString()
-      },
-      "body": {"ref": reference}
-    };
-
-    final response = await channel.invokeMethod(
-        ChannelsConstants.printerStatus, {"data": jsonEncode(requestParams)});
+    final response = await channel
+        .invokeMethod(ChannelsConstants.printerStatus, {"data": reference});
     print(response);
     POSResponseHandler responseHandler = POSResponseHandler();
     responseHandler.handleStatusCall(response);

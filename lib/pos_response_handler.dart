@@ -6,9 +6,10 @@ class POSResponseHandler {
   dynamic response;
 
   handleProcessRequest(String data){
+    print("Response Received==> $data");
     Map<String,dynamic> parsedData = jsonDecode(data);
     if(parsedData["code"]=="0000"){
-      reference = parsedData['ref'];
+      reference = parsedData['data']['uniqueReference'];
     }else{
       throw parsedData['message'];
     }

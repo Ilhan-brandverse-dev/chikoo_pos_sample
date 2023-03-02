@@ -4,6 +4,7 @@ class ChannelsConstants {
   static const String paymentStatus = "checkPaymentStatus";
   static const String printerCall = "makePrinterCall";
   static const String printerStatus = "checkPrinterStatus";
+  static const String processId =  "getProcessId";
 }
 
 

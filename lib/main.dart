@@ -14,11 +14,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'CHIKOO POS SAMPLE APP',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'CHIKOO POS SAMMPLE Home Page'),
     );
   }
 }
@@ -55,14 +55,17 @@ class _MyHomePageState extends State<MyHomePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Text("DATA RECEIVED: $data",
-                  style: Theme.of(context).textTheme.headlineMedium),
+                  style:const TextStyle(
+                    fontSize: 12,
+                    color: Colors.black
+                  )),
               Text(
                 "ERROR: $error",
                 style: const TextStyle(color: Colors.red),
               ),
               const SizedBox(height: 12),
               ElevatedButton(
-                  onPressed: () => makePayment(),
+                    onPressed: () => makePayment(),
                   child: const Text('Payment call')),
               const SizedBox(height: 12),
               // ElevatedButton(
@@ -121,11 +124,12 @@ class _MyHomePageState extends State<MyHomePage> {
   List<String> getPaymentDetails() {
     List<String> body = [];
     print(data);
-    if (data != null && data!='') {
+    if (data != null && data != '') {
       data.forEach((key, value) {
         body.add("$key : $value");
       });
     }
+    body.add("Date time: ${DateTime.now()}");
     return body;
   }
 }

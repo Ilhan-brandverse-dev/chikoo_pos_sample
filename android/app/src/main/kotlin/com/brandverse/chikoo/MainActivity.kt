@@ -1,15 +1,22 @@
 package com.brandverse.chikoo
 
+import android.app.ActivityManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
+import android.os.RemoteException
 import android.util.Log
 import com.pos.intgr.service.AgPosIntgrServiceInterface
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.plugin.common.MethodChannel
+import org.json.JSONException
+
+import org.json.JSONObject
+import java.util.*
+import java.util.concurrent.CompletableFuture
 
 
 class MainActivity : FlutterActivity() {
@@ -17,32 +24,19 @@ class MainActivity : FlutterActivity() {
     private val CHANNEL = "brandverse.chikoo/POS"
 
     var posService: AgPosIntgrServiceInterface? = null
-    private var connection: ServiceConnection = object : ServiceConnection {
+    var connection: ServiceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, iBinder: IBinder) {
             posService = AgPosIntgrServiceInterface.Stub.asInterface(iBinder)
             Log.d("AIDL SERVICE", "Remote config initialised")
         }
+
         override fun onServiceDisconnected(name: ComponentName) {}
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         //AIDL BINDING
-//        val intent = Intent("com.pos.intgr.service")
-//        intent.setPackage("com.pos.intgr.service")
-//       val check =  bindService(
-//           intent,
-//           //convertImplicitIntentToExplicitIntent(intent, this),
-//           connection,
-//           BIND_AUTO_CREATE
-//       )
-//        if(!check){
-//            Log.d("Binding ","Failed")
-//        }else{
-//            Log.d("Binding ","Success")
-//        }
-            bindToService()
+        bindToService()
         //INIT Method Channels
         flutterEngine?.dartExecutor?.let {
             MethodChannel(it.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
@@ -71,6 +65,11 @@ class MainActivity : FlutterActivity() {
                         val response = checkPrinterStatus(requestParams)
                         result.success(response)
                     }
+                    "getProcessId" -> {
+                        val taskId = getProcessId()
+                        Log.d("PROCESS ID", taskId.toString())
+                        result.success(taskId)
+                    }
                     else -> {
                         result.error("404", "NO SUCH METHOD", "METHOD TRYING TO CALL NOT EXISTS")
                     }
@@ -80,66 +79,64 @@ class MainActivity : FlutterActivity() {
 
     }
 
-    private fun bindToService(){
+    private fun bindToService() {
         val intent = Intent("com.pos.intgr.service")
         intent.setPackage("com.pos.intgr.service")
-        val check =  bindService(
+        val check = bindService(
             intent,
-            //convertImplicitIntentToExplicitIntent(intent, this),
             connection,
             BIND_AUTO_CREATE
         )
-        if(!check){
-            Log.d("Binding ","Failed")
-        }else{
-            Log.d("Binding ","Success")
+        if (check) {
+            Log.d("Binding", "SUCCESSFUL")
+        } else {
+            Log.d("Binding", "FAILED")
         }
+
     }
 
     private fun makePayment(request: String): String? {
-        bindToService()
         Log.d("PAYMENT REQUEST", request)
+        bindToService()
 
-        val response = posService?.processPosRequest(request)
+        val response = posService?.processPosRequest(request);
         if (response != null) {
             Log.d("PAYMENT RESPONSE", response)
         } else {
             Log.d("PAYMENT RESPONSE", "NOT RECEIVED")
         }
-        unbindService(connection)
-        return response
+        return response;
     }
 
-    private fun checkPaymentStatus(request: String): String? {
-        bindToService()
-        Log.d("PAYMENT STATUS REQUEST", request)
-        val response = posService?.getStatus(request)
 
+    private fun checkPaymentStatus(request: String): String? {
+        Log.d("PAYMENT STATUS REQUEST", request)
+        bindToService()
+        var response = posService?.getStatus(request)
         if (response != null) {
             Log.d("PAYMENT STATUS RESPONSE", response)
         } else {
             Log.d("PAYMENT STATUS RESPONSE", "NOT RECEIVED")
         }
-        unbindService(connection)
         return response
     }
 
+
     private fun makePrinterCall(request: String): String? {
-        bindToService()
         Log.d("PRINTER CALL", request)
+        bindToService()
         val response = posService?.processPosRequest(request)
         if (response != null) {
             Log.d("PRINTER CALL RESPONSE", response)
         } else {
             Log.d("PRINTER CALL RESPONSE", "NOT RECEIVED")
         }
-        unbindService(connection)
         return response
     }
 
     private fun checkPrinterStatus(request: String): String? {
-        bindToService()
         Log.d("PRINTER STATUS REQUEST", request)
+        bindToService()
         val response = posService?.getStatus(request)
 
         if (response != null) {
@@ -147,8 +144,7 @@ class MainActivity : FlutterActivity() {
         } else {
             Log.d("PRINTER STATUS RESPONSE", "NOT RECEIVED")
         }
-        unbindService(connection)
-        return response
+        return response;
     }
 
 
@@ -169,6 +165,27 @@ class MainActivity : FlutterActivity() {
         val explicitIntent = Intent(implicitIntent)
         explicitIntent.component = component
         return explicitIntent
+    }
+
+    private fun getProcessId(): Int {
+        val TAG = "PROCESS ID::-";
+        var appId: Int = -1;
+        try {
+            val activityManager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
+            val recentTasks = activityManager.getRunningTasks(Int.MAX_VALUE)
+            for (i in recentTasks.indices) {
+                Log.e(
+                    TAG,
+                    "Application executed : " + recentTasks[i].baseActivity!!.toShortString() + "\t ID: " + recentTasks[i].id + ""
+                )
+                appId = recentTasks[0].id
+                Log.d("APP ID ", appId.toString())
+            }
+            return appId;
+        } catch (e: Exception) {
+            Log.e(TAG, "onCreate: Catch")
+            return -1;
+        }
     }
 
 }
